@@ -51,9 +51,10 @@ class DB_connection:
                       location VARCHAR(100) NOT NULL,
                       difficulty INT NOT NULL,
                       importance INT NOT NULL,
-                      status VARCHAR(50) DEFAULT "NEW",
+                      status ENUM('NEW','ASSIGNED','IN_PROGRESS','COMPLETED','FAILED','CANCELLED') DEFAULT "NEW",
                       risk_level VARCHAR(50),
                       assigned_agent_id INT DEFAULT NULL);""")
+            
             cursor.execute(sql_agentes)
             cursor.execute(sql_missions)
             conn.commit()
