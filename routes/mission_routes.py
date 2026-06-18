@@ -3,6 +3,9 @@ from fastapi import APIRouter,HTTPException,Query
 from pydantic import BaseModel
 from typing import Optional,Literal
 from database.agent_db import agent_table
+import logging
+logger = logging.getLogger(__name__)
+logging.getLogger("mysql.connector").setLevel(logging.WARNING)
 
 router = APIRouter()
 
@@ -84,16 +87,17 @@ def assign_task_to_agent(id:int,agent_id:int):
         if not agent["is_active"]:
             raise HTTPException(status_code=400,detail=f"Agent {agent_id} is not active ")
         
-        total_open_mission = int(missions_table.get_mission_by_id(agent_id))
-        if not total_open_mission  < 3:
+        total_open_mission = missions_table.get_open_missions_by_agent(agent_id)
+        if not int(total_open_mission)  < 3:
             raise HTTPException(status_code=400,detail=f"Agent {agent_id} has reached maximum missions ")
         
-        if mission["risk_level"] and agent["agent_rank"]!="Commander":
+        if mission["risk_level"] == "HIGH" and agent["agent_rank"]!="Commander":
             raise HTTPException(status_code=400,detail=f"Only Commander can handle critical missions ")
         
         missions_table.assign_mission(id,agent_id)
         missions_table.update_mission_status(id,"IN_PROGRESS")
-
+        return {"message":f"Mission number {mission["id"]} assign to agent {agent_id}"}
+    
     except HTTPException:
         raise
     except Exception as e:
@@ -105,7 +109,7 @@ def update_status_start_mission(id:int):
         mission = missions_table.get_mission_by_id(id)
         if not mission:
             raise HTTPException(status_code=404,detail=f"id  mission: {id} not found")
-        if mission["status"] != "IN_PROGRESS":
+        if  mission["status"] != "ASSIGNED":
             raise HTTPException(status_code=400,detail=f"Only mission assigind coul start ")
         missions_table.update_mission_status(id,"IN_PROGRESS")
         return {"message":f"Mission  number {mission["id"]} status update successfully"}
@@ -120,6 +124,9 @@ def update_status_complete_mission(id:int):
         mission = missions_table.get_mission_by_id(id)
         if not mission:
             raise HTTPException(status_code=404,detail=f"id  mission: {id} not found")
+        if  mission["status"] != "IN_PROGRESS":
+            raise HTTPException(status_code=400,detail=f"Only mission in progress could copleeted ")
+        
         missions_table.update_mission_status(id,"COMPLETED")
         agent_table.increment_completed(mission["assigned_agent_id"])
         return {"message":f"Mission  number {mission["id"]} status update successfully"}
@@ -134,6 +141,8 @@ def update_status_fail_mission(id:int):
         mission = missions_table.get_mission_by_id(id)
         if not mission:
             raise HTTPException(status_code=404,detail=f"id  mission: {id} not found")
+        if  mission["status"] != "IN_PROGRESS":
+            raise HTTPException(status_code=400,detail=f"Only mission in progress could failed ")
         missions_table.update_mission_status(id,"FAILED")
         agent_table.increment_failed(mission["assigned_agent_id"])
         return {"message":f"Mission  number {mission["id"]} status update successfully"}
@@ -149,6 +158,8 @@ def update_status_cancel_mission(id:int):
         mission = missions_table.get_mission_by_id(id)
         if not mission:
             raise HTTPException(status_code=404,detail=f"id  mission: {id} not found")
+        if not mission["status"] in ["NEW","ASSIGNED"]:
+            raise HTTPException(status_code=400,detail=f"Only mission NEW OR ASSIGNED could canceled ")
         missions_table.update_mission_status(id,"CANCELLED")
         return {"message":f"Mission  number {mission["id"]} status update successfully"}
     except HTTPException:

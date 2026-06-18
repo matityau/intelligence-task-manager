@@ -8,11 +8,10 @@ import logging
 os.makedirs("logs", exist_ok=True)
 
 logging.basicConfig(level=logging.INFO,format="%(asctime)s | %(levelname)s | %(message)s",
-                    handlers=[logging.FileHandler("logs/app.log"),logging.StreamHandler()]
-)
-
+                    handlers=[logging.FileHandler("logs/app.log"),logging.StreamHandler()])
 
 logger = logging.getLogger(__name__)
+logging.getLogger("mysql.connector").setLevel(logging.WARNING)
 
 app = FastAPI() 
 logger.info("Application start upload")
@@ -22,7 +21,7 @@ start.create_tables()
 
 app.include_router(agent_routes.router,prefix="/agents",tags=["Agents"])
 app.include_router(mission_routes.router,prefix="/missions",tags=["Missions"])
-app.include_router(report_routes.router,prefix="/agents",tags=["Reports"])
+app.include_router(report_routes.router,prefix="/reports",tags=["Reports"])
 
 
 if __name__ == "__main__":

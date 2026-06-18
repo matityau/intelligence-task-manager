@@ -1,6 +1,8 @@
 import mysql.connector
 from database.db_connection import DB_connection
 
+
+
 connect = DB_connection()
 
 class AgentDB:
@@ -131,24 +133,26 @@ class AgentDB:
             comp = agent["completed_missions"]
             fail = agent["failed_missions"]
             total = comp + fail
-            success_rate = (comp / total * 100) if total > 0 else 0.0
+            success_rate = (comp / total * 100) if total > 0 else 0
             return {"completed": comp, "failed": fail, "total": total, "success_rate": success_rate}
         return None
         
 
-    def count_active_agents(self)->int:
+    def count_active_agents(self):
         try:
             conn = connect.get_connection()
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT count(*) AS total FROM agents WHERE is_active = TRUE;")
-            row = cursor.fetchall()
-            return row["total"]
+            cursor.execute("SELECT COUNT(*) FROM agents WHERE is_active = TRUE")
+            row = cursor.fetchone()[1]
+            cursor.close()
+            conn.close()
+            return row
         
         except Exception as e:
             raise e
-        finally:
-            cursor.close()
-            conn.close()
+        
+            
+
 
 agent_table = AgentDB()
 

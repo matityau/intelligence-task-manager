@@ -91,7 +91,7 @@ class MissionDB:
     def update_mission_status(self,id:int, status:str)->bool:
         try:
             if not status in ['NEW','ASSIGNED','IN_PROGRESS','COMPLETED','FAILED','CANCELLED']:
-                raise ValueError
+                raise Exception("Not valid status")
             conn = connect.get_connection()
             cursor = conn.cursor(dictionary=True)
             sql ="UPDATE missions SET status = %s WHERE id=%s"
@@ -110,10 +110,10 @@ class MissionDB:
         try:
             conn = connect.get_connection()
             cursor = conn.cursor(dictionary=True)
-            sql ="SELECT * FROM missions WHERE assigned_agent_id=%s"
+            sql ="SELECT * FROM missions WHERE assigned_agent_id = %s AND status IN ('ASSIGNED', 'IN_PROGRESS')"
             cursor.execute(sql,(id,))         
             rows = cursor.fetchall()
-            return rows
+            return len(rows)
         
         except Exception as e:
             raise e
@@ -122,13 +122,13 @@ class MissionDB:
             conn.close()
 
     def count_all_missions(self):
+        
         try:
             conn = connect.get_connection()
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT count(*) AS total FROM missions;")
-            row = cursor.fetchone()
-            return row["total"]
-        
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM missions")
+            count = cursor.fetchone()[0]
+            return count
         except Exception as e:
             raise e
         finally:
@@ -137,11 +137,15 @@ class MissionDB:
 
     def count_by_status(self,status):
         try:
+            if not status in ('NEW','ASSIGNED','IN_PROGRESS','COMPLETED','FAILED','CANCELLED'):
+                raise Exception("Status must be in: 'NEW','ASSIGNED','IN_PROGRESS','COMPLETED','FAILED','CANCELLED' ")
             conn = connect.get_connection()
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT count(*) AS total FROM missions WHER status=%s;",(status,))
+            cursor.execute("SELECT count(*) AS total FROM missions WHER status=%s;",(status))
             row = cursor.fetchone()
-            return {status : row["total"]}
+            if not row:
+                return {}
+            return row["total"]
         
         except Exception as e:
             raise e
@@ -153,7 +157,7 @@ class MissionDB:
         try:
             conn = connect.get_connection()
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT count(*) AS total FROM missions WHER status = 'IN_PROGRESS';")
+            cursor.execute("SELECT count(*) AS total FROM missions WHER status IN ('ASSIGNED', 'IN_PROGRESS');")
             row = cursor.fetchone()
             return {"open missions" : row["total"]}
         
@@ -166,11 +170,11 @@ class MissionDB:
     def count_critical_missions(self):
         try:
             conn = connect.get_connection()
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT count(*) AS total FROM missions WHER risk_level = 'CRITICAL';")
-            row = cursor.fetchone()
-            return {"CRITICAL missions" : row["total"]}
-        
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM missions WHERE risk_level = 'CRITICAL'")
+            count = cursor.fetchone()[0]
+            return count
+    
         except Exception as e:
             raise e
         finally:
@@ -189,38 +193,16 @@ class MissionDB:
             raise e
         finally:
             cursor.close()
-            conn.close() 
-
-
-
-
-#  def assign_mission(self, m_id: int, a_id: int):
-#         mission = self.get_mission_by_id(m_id)
-#         agent = agent_db.get_agent_by_id(a_id)
-
-#         if not mission or not agent:
-#             raise ValueError("Mission or Agent not found.")
-#         if mission["status"] != "NEW":
-#             raise ValueError("Can only assign a mission with 'NEW' status.")
-#         if not agent["is_active"]:
-#             raise ValueError("Inactive agent cannot receive missions.")
-        
-#         open_missions = self.get_open_missions_by_agent(a_id)
-#         if len(open_missions) >= 3:
-#             raise ValueError("Agent cannot hold more than 3 open missions.")
-#         if mission["risk_level"] == "CRITICAL" and agent["agent_rank"] != "Commander":
-#             raise ValueError("CRITICAL missions can only be assigned to a Commander.")
-
-#   conn = db_manager.get_connection()
-#         cursor = conn.cursor()
-#         cursor.execute("UPDATE missions SET assigned_agent_id = %s, status = 'ASSIGNED' WHERE id = %s", (a_id, m_id))
-#         conn.commit()
-#         cursor.close()
-#         conn.close()
-#         return {"status": "success", "message": "Mission assigned successfully"}
-
-
-
-
+            conn.close()
+ 
+    def count_open_missions(self):
+        conn = connect.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM missions WHERE status IN ('ASSIGNED', 'IN_PROGRESS')")
+        count = cursor.fetchone()[0]
+        cursor.close()
+        conn.close()
+        return count
+    
 
 missions_table = MissionDB()
