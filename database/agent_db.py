@@ -9,23 +9,23 @@ class AgentDB:
 
     def create_agent(self,data):
         try:
+            
             conn = connect.get_connection()
             cursor = conn.cursor(dictionary=True)
-            sql_create = """INSERT INTO agents (name,specialty,is_active,completed_missions,failed_missions,agent_rank)
-                            VALUES(%s,%s,%s,%s,%s,%s);"""
-            values = (data["name"],data["specialty"],True,0,0,data["agent_rank"])
-            cursor.execute(sql_create,values)
+            sql_create = """INSERT INTO agents (name,specialty,agent_rank) VALUES (%s,%s,%s);"""
+            values = (data["name"],data["specialty"],data["agent_rank"])
+            cursor.execute(sql_create,(values))
             conn.commit()
             new_id = cursor.lastrowid
-            cursor.execute("SELECT * FROM agents WHERE id = %s;",(new_id,))
-            agent = cursor.fetchone()
+            agent = self.get_agent_by_id(new_id)
             return agent
-        
         except Exception as e:
             raise e
         finally:
             cursor.close()
             conn.close()
+
+    
 
     
     def get_all_agents(self):
@@ -60,29 +60,27 @@ class AgentDB:
             cursor.close()
             conn.close()
 
-    def update_agent(self,id:int, data:dict)->bool:
-        try:
-            conn = connect.get_connection()
-            cursor = conn.cursor(dictionary=True)
-            
-            sql ="UPDATE agent SET name=%s,specialty=%s,agent_rank=%s WHERE id=%s"
-            values = (data["name"],data["specialty"],data["agent_rank"],id)
-            cursor.execute(sql,values)
-            conn.commit()           
-            row = cursor.rowcount
-            return row > 0
-        
-        except Exception as e:
-            raise e
-        finally:
-            cursor.close()
-            conn.close()
-        
+    
+    def update_agent(self, agent_id: int, data: dict):
+        conn = connect.get_connection()
+        cursor = conn.cursor()
+        sql_update = """
+        UPDATE agents 
+            SET name = %s, specialty = %s, agent_rank = %s WHERE id = %s;"""
+        values = (data["name"], data["specialty"],data["agent_rank"],agent_id)
+        cursor.execute(sql_update,values )
+        conn.commit()
+
+        success = cursor.rowcount > 0
+        cursor.close()
+        conn.close()
+        return {"status": "success" if success else "failed"}
+    
     def deactivate_agent(self,id:int)->bool:
         try:
             conn = connect.get_connection()
             cursor = conn.cursor(dictionary=True)
-            sql ="UPDATE agent SET is_active=FALSE WHERE id=%s"
+            sql ="UPDATE agents SET is_active=FALSE WHERE id=%s"
             cursor.execute(sql,(id,))
             conn.commit()           
             row = cursor.rowcount
@@ -98,7 +96,7 @@ class AgentDB:
         try:
             conn = connect.get_connection()
             cursor = conn.cursor(dictionary=True)
-            sql ="UPDATE agent SET completed_missions = completed_missions + 1 WHERE id=%s"
+            sql ="UPDATE agents SET completed_missions = completed_missions + 1 WHERE id=%s"
             cursor.execute(sql,(id,))
             conn.commit()           
             row = cursor.rowcount
@@ -114,7 +112,7 @@ class AgentDB:
         try:
             conn = connect.get_connection()
             cursor = conn.cursor(dictionary=True)
-            sql ="UPDATE agent SET failed_missions = failed_missions + 1 WHERE id=%s"
+            sql ="UPDATE agents SET failed_missions = failed_missions + 1 WHERE id=%s"
             cursor.execute(sql,(id,))
             conn.commit()           
             row = cursor.rowcount
@@ -127,27 +125,16 @@ class AgentDB:
             conn.close()
 
     def get_agent_performance(self,id:int):
-        try:
-            conn = connect.get_connection()
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT * FROM agents WHERE id;",(id,))
-            row = cursor.fetchone()
-            completed = int(row["completed_missions"])
-            failed = int(row["failed_missions"])
-            total_missions = completed + failed
-            success_precent =(completed // total_missions)
-
-
-            return{"completed":completed,
-                   "failed":failed,
-                   "total":total_missions,
-                   "rate_success":f'{success_precent}%'}
+       
+        agent = self.get_agent_by_id(id)
+        if  agent:
+            comp = agent["completed_missions"]
+            fail = agent["failed_missions"]
+            total = comp + fail
+            success_rate = (comp / total * 100) if total > 0 else 0.0
+            return {"completed": comp, "failed": fail, "total": total, "success_rate": success_rate}
+        return None
         
-        except Exception as e:
-            raise e
-        finally:
-            cursor.close()
-            conn.close()
 
     def count_active_agents(self)->int:
         try:
