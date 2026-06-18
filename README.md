@@ -10,10 +10,21 @@ The cart is connected to the database and updates the data into it using the Pyt
 ## Folder structure
 ```
 intelligence-task-manager/
+|____main.py
+|
 ├── database/
 │   ├── db_connection.py
 │   ├── agent_db.py
 │   └── mission_db.py
+|
+|___routes/
+|   |__agents_routes.py
+|   |__mission_routes.py
+|   |__report_routes.py
+|
+|___logs/
+|   |__app.log
+|
 ├── README.md
 ├── requirements.txt
 └── .gitignore 
@@ -126,6 +137,59 @@ ________________________________________________________________________________
 get_top_agent()                | The agent with the highest completed_missions
 ____________________________________________________________________________________
 ```
+## Endpoints
+### Agents
+```
+    Method   |   Endpoint               | describing
+    ____________________________________________________________
+    [POST]   |     /agents              |   create a new agent
+    _________|__________________________|_______________________
+    [GET]    |   /agents                | returs tha all agents
+    _________|__________________________|_______________________
+    [GET]    |  /agents/ {id}           | return agent by id
+    _________|__________________________|_______________________
+    [PUT]    |  /agents/{id}            | update agent by id
+    _________|__________________________|_______________________
+    [PUT]    | /agents/{id}/deactivate  | update agent to deactivate
+    _________|__________________________|_______________________
+    [GET]    |/agents/{id}/performance  | return the aget performance
+             |                          | by id
+    ______________________________________________________________                                        
+
+
+```
+### Missions
+```
+    Method   |   Endpoint               | describing
+    _________|__________________________|_______________________
+    [POST]   |     /missions            |   create a new mission
+    _________|__________________________|_______________________
+    [GET]    |   /missions              | returs tha all mission
+    _________|__________________________|_______________________
+    [GET]    |  /missions/ {id}         | return mission by id
+    _________|__________________________|_______________________
+    [PUT]    |  /missions/{id}          | update mission by id
+    _________|__________________________|_______________________
+    [PUT]    | /missions/{id}/complete  | update mission to complete 
+    _________|__________________________|_______________________
+    [PUT]    |/missions/{id}/fail       | update mission to failed
+    _________|__________________________|_______________________ 
+    [PUT]    |/missions/{id}/cancel     | update mission to canceled
+    _________|__________________________|_______________________   
+```
+### Reports
+```
+ Method   |   Endpoint                  | describing
+ _________|_____________________________|_______________________
+[GET]    |   /reports/summary           | returs general system report
+_________|______________________________|_______________________
+[GET]    |  /reports/missions-by-status | Returns a dictionary 
+         |                              | of tasks by status        
+_________|______________________________|_______________________
+[GET]    |  /reports/top-agent          | returs the top agent
+_________|______________________________|_______________________
+
+```
 
 ## System rules
 
@@ -140,6 +204,11 @@ ________________________________________________________________________________
 8 Only a task with the status ASSIGNED can be started. After: status=IN_PROGRESS.
 9 Only a task with the status IN_PROGRESS can be finished and changed to failed or completed.
 10 Only a task with the status NEW or ASSIGNED can be canceled — otherwise an error.
+```
+
+## System flow
+```
+http request -> fastapi -> endpoints -> query -> database
 ```
 
 ## Running instructions
