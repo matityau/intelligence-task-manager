@@ -1,6 +1,7 @@
 import mysql.connector
 from database.db_connection import DB_connection
 connect = DB_connection()
+
 class MissionDB:
     def __init__(self) -> None:
         pass
@@ -21,9 +22,10 @@ class MissionDB:
             cursor = conn.cursor(dictionary=True)
             risc_intenger = int(data["difficulty"]) * 2 + int(data["importance"])
             risc_words =self.calculate_risk_level(risc_intenger)
-            sql_create = """INSERT INTO missions (title,description,location,difficulty,importance,status,risk_level,assigned_agent_id)
+
+            sql_create = """INSERT INTO missions (title,description,location,difficulty,importance,risk_level)
                             VALUES(%s,%s,%s,%s,%s,%s);"""
-            values = (data["title"],data["description"],data["location"],data["difficulty"],data["importance"],"NEW",risc_words,None)
+            values = (data["title"],data["description"],data["location"],data["difficulty"],data["importance"],risc_words)
             cursor.execute(sql_create,values)
             conn.commit()
             new_id = cursor.lastrowid
@@ -36,7 +38,8 @@ class MissionDB:
         finally:
             cursor.close()
             conn.close()
-
+        
+ 
     def get_all_missions(self):
         try:
             conn = connect.get_connection()
@@ -87,6 +90,8 @@ class MissionDB:
 
     def update_mission_status(self,id:int, status:str)->bool:
         try:
+            if not status in ['NEW','ASSIGNED','IN_PROGRESS','COMPLETED','FAILED','CANCELLED']:
+                raise ValueError
             conn = connect.get_connection()
             cursor = conn.cursor(dictionary=True)
             sql ="UPDATE missions SET status = %s WHERE id=%s"
@@ -185,6 +190,34 @@ class MissionDB:
         finally:
             cursor.close()
             conn.close() 
+
+
+
+
+#  def assign_mission(self, m_id: int, a_id: int):
+#         mission = self.get_mission_by_id(m_id)
+#         agent = agent_db.get_agent_by_id(a_id)
+
+#         if not mission or not agent:
+#             raise ValueError("Mission or Agent not found.")
+#         if mission["status"] != "NEW":
+#             raise ValueError("Can only assign a mission with 'NEW' status.")
+#         if not agent["is_active"]:
+#             raise ValueError("Inactive agent cannot receive missions.")
+        
+#         open_missions = self.get_open_missions_by_agent(a_id)
+#         if len(open_missions) >= 3:
+#             raise ValueError("Agent cannot hold more than 3 open missions.")
+#         if mission["risk_level"] == "CRITICAL" and agent["agent_rank"] != "Commander":
+#             raise ValueError("CRITICAL missions can only be assigned to a Commander.")
+
+#   conn = db_manager.get_connection()
+#         cursor = conn.cursor()
+#         cursor.execute("UPDATE missions SET assigned_agent_id = %s, status = 'ASSIGNED' WHERE id = %s", (a_id, m_id))
+#         conn.commit()
+#         cursor.close()
+#         conn.close()
+#         return {"status": "success", "message": "Mission assigned successfully"}
 
 
 
