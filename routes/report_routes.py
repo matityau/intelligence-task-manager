@@ -12,6 +12,7 @@ logging.getLogger("mysql.connector").setLevel(logging.WARNING)
 @router.get("/summary")
 def general_system_report():
     try:
+        logger.info("GET/ reports caleled/summary")
         active_agents = agent_table.count_active_agents()
         if not active_agents:
             active_agents = []
@@ -46,12 +47,13 @@ def general_system_report():
 @router.get("/missions-by-status")
 def get_missions_by_status():
     try:
-        new = missions_table.count_by_status("New")
-        assigned =missions_table.count_by_status("ASSIGNED")
-        in_p =missions_table.count_by_status("IN_PROGRESS")
-        completed =missions_table.count_by_status("COMPLETED")
-        failed =missions_table.count_by_status("FAILED")
-        canceled =missions_table.count_by_status("CANCELLED")
+        logger.info("GET/ reports/missions-by-status caleled")
+        new = missions_table.count_by_status('New')
+        assigned =missions_table.count_by_status('ASSIGNED')
+        in_p =missions_table.count_by_status('IN_PROGRESS')
+        completed =missions_table.count_by_status('COMPLETED')
+        failed =missions_table.count_by_status('FAILED')
+        canceled =missions_table.count_by_status('CANCELLED')
         return {
             "new": new,
             "assigned": assigned,
@@ -66,7 +68,9 @@ def get_missions_by_status():
 @router.get("/top-agent")
 def top_agent():
     try:
+        logger.info("GET/ reports/summary caleled")
         top = missions_table.get_top_agent()
+        logger.info("GET/ reports/summary caleled")
         return top
     except Exception as e :
         raise HTTPException(status_code=500,detail= f"error: {e}")

@@ -136,28 +136,30 @@ class MissionDB:
             conn.close()
 
     def count_by_status(self,status):
+        allowed = ['NEW','ASSIGNED','IN_PROGRESS','COMPLETED','FAILED','CANCELLED']
         try:
-            if not status in ('NEW','ASSIGNED','IN_PROGRESS','COMPLETED','FAILED','CANCELLED'):
-                raise Exception("Status must be in: 'NEW','ASSIGNED','IN_PROGRESS','COMPLETED','FAILED','CANCELLED' ")
-            conn = connect.get_connection()
-            cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT count(*) AS total FROM missions WHER status=%s;",(status))
-            row = cursor.fetchone()
-            if not row:
-                return {}
-            return row["total"]
+            if status in allowed:
+                conn = connect.get_connection()
+                cursor = conn.cursor(dictionary=True)
+                cursor.execute("SELECT count(*) AS total FROM missions WHER status=%s;",(status))
+                row = cursor.fetchone()
+                cursor.close()
+                conn.close()
+                if not row:
+                    return {}
+                return row
+            
+            raise Exception("Status must be in: 'NEW','ASSIGNED','IN_PROGRESS','COMPLETED','FAILED','CANCELLED' ")
         
         except Exception as e:
             raise e
-        finally:
-            cursor.close()
-            conn.close() 
+       
 
     def count_open_missions(self):
         try:
             conn = connect.get_connection()
             cursor = conn.cursor(dictionary=True)
-            cursor.execute("SELECT count(*) AS total FROM missions WHER status IN ('ASSIGNED', 'IN_PROGRESS');")
+            cursor.execute("SELECT count(*) AS total FROM missions WHER status IN ('NEW','ASSIGNED','IN_PROGRESS');")
             row = cursor.fetchone()
             return {"open missions" : row["total"]}
         
@@ -195,14 +197,6 @@ class MissionDB:
             cursor.close()
             conn.close()
  
-    def count_open_missions(self):
-        conn = connect.get_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM missions WHERE status IN ('ASSIGNED', 'IN_PROGRESS')")
-        count = cursor.fetchone()[0]
-        cursor.close()
-        conn.close()
-        return count
-    
+
 
 missions_table = MissionDB()
